@@ -129,7 +129,7 @@ BOOL CiTunesMovieOnSaleDlg::OnInitDialog()
 	strURL[14] = L"https://itunes.apple.com/tw/genre/dian-ying-yin-le-zhu-ti-dian/id4424?l=zh"; //音樂主題電影
 	strURL[15] = L"https://itunes.apple.com/tw/genre/dian-ying-du-li-zhi-zuo-ying/id4409?l=zh"; //獨立製作影片
 
-	strAZ.SetSize(27);
+	strAZ.SetSize(28);
 	strAZ[0] = L"A";
 	strAZ[1] = L"B";
 	strAZ[2] = L"C";
@@ -157,6 +157,7 @@ BOOL CiTunesMovieOnSaleDlg::OnInitDialog()
 	strAZ[24] = L"Y";
 	strAZ[25] = L"Z";
 	strAZ[26] = L"*";
+	strAZ[27] = L"";
 
 
 	int iTotalProgress = 0;	
@@ -390,15 +391,46 @@ BOOL CiTunesMovieOnSaleDlg::DestroyWindow()
 void CiTunesMovieOnSaleDlg::OnBnClickedButtonPrice()
 {
 	int iTotalPriceCount = 0;
-	Table tPrice = Sql.Select(L"LINKER",L"*");
+	Table tPrice = Sql.Select(L"LINKER",L"*", L"PRICE IS NULL");
 	iTotalPriceCount = tPrice.GetRowCount();
 	m_myProgressPrice.SetRange(0, iTotalPriceCount);
-
+	int iPercentagePrice = 0;
 	for (int i = 0; i < iTotalPriceCount; i++)
 	{
 		tPrice.GoRow(i);
 		CString strTargetUrl = tPrice.GetValue(0);
 		CString strMyHTML = m_httpClient.HTTPGet(strTargetUrl, TRUE, NULL, &m_httpClient.g_cookie);
+		CString  thePrice = getPrice(strMyHTML);
+		Sql.Update(L"LINKER", L"PRICE=" + thePrice, L"URL='" + strTargetUrl + L"'");
+
+		iPercentagePrice++;
+		m_myProgressPrice.SetPos(iPercentagePrice);
 	}
 
+}
+
+
+CString CiTunesMovieOnSaleDlg::getPrice(CString output)
+{
+	CString strOutput = output;
+	strOutput.Replace(L" = ", L"=");
+	strOutput.Replace(L"<ul>", L"");
+	strOutput.Replace(L"</ul>", L"");
+	strOutput.Replace(L"<li>", L"");
+	strOutput.Replace(L"</li>", L"");
+	strOutput.Replace(L"<div>", L"");
+	strOutput.Replace(L"</div>", L"");
+	strOutput.Replace(L"\r\n", L"");
+	strOutput.Replace(L"\n\r", L"");
+	strOutput.Replace(L"\n", L"");
+	strOutput.Replace(L"\r", L"");
+	strOutput.Replace(L"  ", L" ");
+	strOutput.Replace(L"  ", L"");
+	strOutput.Replace(L"&nbsp;", L"");
+
+	strOutput = GetInner(strOutput, L"<div id=\"left-stack\">", L"客戶評分");
+	strOutput = GetInner(strOutput, L"class=\"price\">", L"</span><li ");
+	strOutput.Replace(L"class=\"price\">", L"");
+	strOutput.Replace(L"NT$ ", L"");
+	return strOutput;
 }

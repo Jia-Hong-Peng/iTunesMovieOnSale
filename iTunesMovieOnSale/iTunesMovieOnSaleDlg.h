@@ -55,4 +55,5 @@ public:
 	CProgressCtrl m_myProgressLinker;
 	afx_msg void OnBnClickedButtonPrice();
 	CProgressCtrl m_myProgressPrice;
+	CString CiTunesMovieOnSaleDlg::getPrice(CString output);
 };
