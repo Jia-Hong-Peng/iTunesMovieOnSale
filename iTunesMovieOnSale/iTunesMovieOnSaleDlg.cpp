@@ -108,7 +108,7 @@ BOOL CiTunesMovieOnSaleDlg::OnInitDialog()
 	// TODO: Add extra initialization here
 	Sql.OpenDb(_T("iTunesMovieOnSale.db"));	
 	//Sql.Execute(_T("DROP TABLE LINKER;"));
-	Sql.Execute(_T("CREATE TABLE LINKER([URL] VARCHAR(255) PRIMARY KEY,[TITLE] VARCHAR(255) ,[PRICE] INTEGER  );"));
+	Sql.Execute(_T("CREATE TABLE LINKER([URL] VARCHAR(255) PRIMARY KEY,[TITLE] VARCHAR(255) ,[PRICE] INTEGER  , [TIME]  VARCHAR(255) );"));
 	m_myProgressLinker.SetPos(0);
 	m_myProgressPrice.SetPos(0);
 	strURL.SetSize(16);
@@ -391,7 +391,7 @@ BOOL CiTunesMovieOnSaleDlg::DestroyWindow()
 void CiTunesMovieOnSaleDlg::OnBnClickedButtonPrice()
 {
 	int iTotalPriceCount = 0;
-	Table tPrice = Sql.Select(L"LINKER",L"*", L"PRICE IS NULL");
+	Table tPrice = Sql.Select(L"LINKER",L"*", L"PRICE IS NULL OR TIME IS NULL  ");
 	iTotalPriceCount = tPrice.GetRowCount();
 	m_myProgressPrice.SetRange(0, iTotalPriceCount);
 	int iPercentagePrice = 0;
@@ -401,7 +401,26 @@ void CiTunesMovieOnSaleDlg::OnBnClickedButtonPrice()
 		CString strTargetUrl = tPrice.GetValue(0);
 		CString strMyHTML = m_httpClient.HTTPGet(strTargetUrl, TRUE, NULL, &m_httpClient.g_cookie);
 		CString  thePrice = getPrice(strMyHTML);
-		Sql.Update(L"LINKER", L"PRICE=" + thePrice, L"URL='" + strTargetUrl + L"'");
+
+		//Millisecond
+		SYSTEMTIME st;
+		GetSystemTime(&st);
+
+		CTime currTime = CTime::GetCurrentTime();
+
+		int yy = (int)currTime.GetYear();
+		int mm = (int)currTime.GetMonth();
+		int dd = (int)currTime.GetDay();
+		int hh = (int)currTime.GetHour();
+		int mmm = (int)currTime.GetMinute();
+		int ss = (int)currTime.GetSecond();
+		int ms = (int)st.wMilliseconds;
+		CString strTime;
+		strTime.Format(_T("%04d-%02d-%02d %02d:%02d:%02d.%03d"), yy,mm,dd, hh, mmm, ss, ms);		
+
+		thePrice = (thePrice.IsEmpty()) ? L"NULL" : thePrice;
+
+		Sql.Update(L"LINKER", L"PRICE=" + thePrice + L", TIME='" + strTime + L"'", L"URL='" + strTargetUrl + L"'");
 
 		iPercentagePrice++;
 		m_myProgressPrice.SetPos(iPercentagePrice);
